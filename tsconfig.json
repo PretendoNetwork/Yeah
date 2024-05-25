@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"sourceMap": true,
+		"declaration": true,
+		"baseUrl": "src",
+		"outDir": "dist",
+		"noEmitOnError": true,
+		"paths": {
+			"@/*": ["./*"]
+		}
+	},
+	"include": ["src"]
+}

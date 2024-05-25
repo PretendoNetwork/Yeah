@@ -1,0 +1,15 @@
+{
+	"compilerOptions": {
+		"sourceMap": true,
+		"declaration": true,
+		"baseUrl": "src",
+		"outDir": "dist",
+		"noEmitOnError": true,
+		"jsx": "react",
+		"jsxFactory": "createElement",
+		"paths": {
+			"@/*": ["./*"]
+		}
+	},
+	"include": ["src"]
+}

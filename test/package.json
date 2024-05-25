@@ -1,0 +1,24 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "build": "npm run clean && npm run compile && npm run browserify && npm run minify && http-server",
+    "clean": "rimraf ./dist",
+    "compile": "tsc",
+    "browserify": "browserify ./dist/test.js -o ./dist/bundle.js",
+    "minify": "uglifyjs dist/bundle.js --compress --mangle --source-map --output dist/bundle.min.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "browserify": "^17.0.0",
+    "uglify-js": "^3.17.4"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
