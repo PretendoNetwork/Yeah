@@ -1,0 +1,20 @@
+{
+  "name": "express",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "tsc-alias": "^1.8.10",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
