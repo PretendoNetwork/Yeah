@@ -1,10 +1,12 @@
+import * as he from 'he';
+
 export function createElement(tag: string, props: Record<string, any> | null, ...children: any[]): any {
 	return { type: tag, props: { ...props, children } };
 }
 
 export function renderElement(element: any): string {
 	if (typeof element === 'string' || typeof element === 'number') {
-		return element.toString();
+		return he.encode(element.toString());
 	}
 
 	if (Array.isArray(element)) {

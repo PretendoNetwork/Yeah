@@ -15,6 +15,7 @@
 	"license": "ISC",
 	"devDependencies": {
 		"@eslint/js": "^9.3.0",
+		"@types/he": "^1.2.3",
 		"@types/react": "^18.3.3",
 		"eslint": "^8.57.0",
 		"tsc-alias": "^1.8.10",
@@ -37,5 +38,8 @@
 			"require": "./dist/server/jsx-server-factory.js",
 			"types": "./dist/server/jsx-server-factory.d.ts"
 		}
+	},
+	"dependencies": {
+		"he": "^1.2.0"
 	}
 }
