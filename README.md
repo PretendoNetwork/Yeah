@@ -67,7 +67,7 @@ Import and write your JSX/TSX:
 import { createElement } from '@pretendonetwork/yeah/server';
 
 // Populates the <head> tag
-export function Header() {
+export function Head() {
 	return (
 		<link href='https://cdn.jsdelivr.net/npm/reset-css@5.0.2/reset.min.css' rel='stylesheet'></link>
 	);

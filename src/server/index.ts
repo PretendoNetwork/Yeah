@@ -11,8 +11,8 @@ export async function renderFile(filePath: string, options: ViewOptions, callbac
 
 		delete props.settings; // * Delete Express config settings
 
-		const { Header, Body } = await import(filePath);
-		const html = renderPage(Header(props), Body(props));
+		const { Head, Body } = await import(filePath);
+		const html = renderPage(Head(props), Body(props));
 
 		callback(null, html);
 	} catch (error: unknown) {
