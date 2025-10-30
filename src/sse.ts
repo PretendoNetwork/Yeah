@@ -10,7 +10,7 @@ const SSE_CONNECTIONS: Record<number, Context> = {};
  * @param connectionID - A unique ID to represent a connection. Used for sending data back to specific connections.
  * @param ctx - Yeah request context.
  */
-export function setupSSE(connectionID: number, ctx: Context) {
+export function setupSSE(connectionID: number, ctx: Context): void {
 	// TODO - Send the user back its connection ID as a cookie, so we can reference the user later?
 	ctx.response.setHeader('Content-Type', 'text/event-stream');
 	ctx.response.setHeader('Cache-Control', 'no-cache');
@@ -34,7 +34,7 @@ export function setupSSE(connectionID: number, ctx: Context) {
  * @param connectionID - Unique ID for the connection to send the event to.
  * @param data - Optional. Event data.
  */
-export function sendEvent(event: string, connectionID: number, data: Record<any, unknown> = {}) {
+export function sendEvent(event: string, connectionID: number, data: Record<any, unknown> = {}): void {
 	const connection = SSE_CONNECTIONS[connectionID];
 
 	if (connection) {
@@ -50,7 +50,7 @@ export function sendEvent(event: string, connectionID: number, data: Record<any,
  * @param data - Optional. Event data.
  * @param excludedConnectionIDs - Optional. Connection IDs to exclude from the broadcast, such as the user who created the event.
  */
-export function broadcast(event: string, data: Record<any, unknown> = {}, excludedConnectionIDs: number[] = []) {
+export function broadcast(event: string, data: Record<any, unknown> = {}, excludedConnectionIDs: number[] = []): void {
 	for (const connectionID in SSE_CONNECTIONS) {
 		if (excludedConnectionIDs.includes(Number(connectionID))) {
 			continue;

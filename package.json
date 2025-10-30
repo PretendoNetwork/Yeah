@@ -5,7 +5,9 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "eslint ./src && tsup"
+    "lint": "eslint ./src",
+    "lint:fix": "eslint ./src --fix",
+    "build": "tsup && tsc --noEmit"
   },
   "keywords": [],
   "author": "",

@@ -215,11 +215,11 @@ export async function build(appRoot: string): Promise<void> {
 	}
 
 	for (const layoutDefinition of layoutDefinitions) {
-		server += `import ${layoutDefinition.importName} from \'./${layoutDefinition.importPath}\';\n`;
+		server += `import ${layoutDefinition.importName} from './${layoutDefinition.importPath}';\n`;
 	}
 
 	for (const routeDefinition of pageRouteDefinitions) {
-		server += `import * as ${routeDefinition.importName} from \'./${routeDefinition.importPath}\';\n`;
+		server += `import * as ${routeDefinition.importName} from './${routeDefinition.importPath}';\n`;
 	}
 
 	// * Server route files can export multiple handlers for different
@@ -230,7 +230,7 @@ export async function build(appRoot: string): Promise<void> {
 			continue;
 		}
 
-		server += `import * as ${routeDefinition.importName} from \'./${routeDefinition.importPath}\';\n`;
+		server += `import * as ${routeDefinition.importName} from './${routeDefinition.importPath}';\n`;
 		seenImports.add(routeDefinition.importPath);
 	}
 
