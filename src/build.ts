@@ -11,11 +11,11 @@ type RouteDefinition = {
 	route: string;
 	method: string;
 	hasMiddleware: boolean;
-	customLayout?: string;
 };
 
 type PageRouteDefinition = RouteDefinition & {
 	customLayout?: string;
+	hasClientScript: boolean;
 };
 
 type ServerRouteDefinition = RouteDefinition & {
@@ -133,6 +133,8 @@ export async function build(appRoot: string): Promise<void> {
 	const layoutDefinitions = await createLayoutDefinitions(appRoot, layouts);
 	const allRouteDefinitions = [...pageRouteDefinitions, ...serverRouteDefinitions];
 
+	console.log(pageRouteDefinitions);
+
 	for (const pageRouteDefinition of pageRouteDefinitions) {
 		for (const serverRouteDefinition of serverRouteDefinitions) {
 			if (pageRouteDefinition.route === serverRouteDefinition.route && pageRouteDefinition.method === serverRouteDefinition.method) {
@@ -154,7 +156,7 @@ export async function build(appRoot: string): Promise<void> {
 	let defaultLayoutRequired = false;
 
 	for (const routeDefinition of allRouteDefinitions) {
-		if (!routeDefinition.customLayout) {
+		if ('customLayout' in routeDefinition && !routeDefinition.customLayout) {
 			defaultLayoutRequired = true;
 		}
 
@@ -272,7 +274,14 @@ export async function build(appRoot: string): Promise<void> {
 		}
 
 		server += '\tconst isPartial = request.headers[\'hx-request\'] === \'true\' || request.headers[\'nwfx-request\'] === \'true\';\n';
-		server += `\tconst jsx = isPartial ? await ${routeDefinition.importName}.Partial(ctx) : await ${routeDefinition.importName}.Page(ctx);\n`;
+		server += `\tlet jsx = isPartial ? await ${routeDefinition.importName}.Partial(ctx) : await ${routeDefinition.importName}.Page(ctx);\n`;
+
+		if (routeDefinition.hasClientScript) {
+			server += `\tconst scriptContent = ${routeDefinition.importName}.ClientScript.toString();\n`;
+			server += '\tconst scriptTag = React.createElement(\'script\', { dangerouslySetInnerHTML: { __html: \`(\${scriptContent})()\` } });\n';
+			server += '\tjsx = React.createElement(React.Fragment, null, jsx, scriptTag);\n';
+		}
+
 		server += '\tlet html = \'\';\n';
 		server += '\tif (isPartial) {\n';
 		server += `\t\thtml = renderToString(jsx);\n`;
@@ -381,13 +390,16 @@ async function createPageRouteDefinitions(appRoot: string, pages: string[]): Pro
 		const route = pathToRoute('pages', relativePath);
 		const method = fileNameToHTTPMethod(relativePath);
 
+		console.log(routeModule);
+
 		definitions.push({
 			importName,
 			importPath,
 			route,
 			method,
 			hasMiddleware: !!routeModule?.config?.middleware?.length,
-			customLayout: routeModule?.config?.layout
+			customLayout: routeModule?.config?.layout,
+			hasClientScript: typeof routeModule.ClientScript === 'function'
 		});
 	}
 
@@ -413,7 +425,6 @@ async function createServerRouteDefinitions(appRoot: string, serverRoutes: strin
 		const route = pathToRoute('server', relativePath);
 		const method = fileNameToHTTPMethod(relativePath);
 		const hasMiddleware = !!routeModule?.config?.middleware?.length;
-		const customLayout = routeModule?.config?.layout;
 
 		if (typeof routeModule.Get === 'function') {
 			tempDefinitions.push({
@@ -422,8 +433,7 @@ async function createServerRouteDefinitions(appRoot: string, serverRoutes: strin
 				route,
 				method: 'get',
 				routeFunctionName: 'Get',
-				hasMiddleware,
-				customLayout
+				hasMiddleware
 			});
 		}
 
@@ -434,8 +444,7 @@ async function createServerRouteDefinitions(appRoot: string, serverRoutes: strin
 				route,
 				method: 'post',
 				routeFunctionName: 'Post',
-				hasMiddleware,
-				customLayout
+				hasMiddleware
 			});
 		}
 
@@ -446,8 +455,7 @@ async function createServerRouteDefinitions(appRoot: string, serverRoutes: strin
 				route,
 				method: 'put',
 				routeFunctionName: 'Put',
-				hasMiddleware,
-				customLayout
+				hasMiddleware
 			});
 		}
 
@@ -458,8 +466,7 @@ async function createServerRouteDefinitions(appRoot: string, serverRoutes: strin
 				route,
 				method: 'delete',
 				routeFunctionName: 'Delete',
-				hasMiddleware,
-				customLayout
+				hasMiddleware
 			});
 		}
 
@@ -470,8 +477,7 @@ async function createServerRouteDefinitions(appRoot: string, serverRoutes: strin
 				route,
 				method: 'all',
 				routeFunctionName: 'Route',
-				hasMiddleware,
-				customLayout
+				hasMiddleware
 			});
 		} else if (typeof routeModule.Route === 'function') {
 			tempDefinitions.push({
@@ -480,8 +486,7 @@ async function createServerRouteDefinitions(appRoot: string, serverRoutes: strin
 				route,
 				method,
 				routeFunctionName: 'Route',
-				hasMiddleware,
-				customLayout
+				hasMiddleware
 			});
 		}
 

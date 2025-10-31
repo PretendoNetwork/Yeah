@@ -39,7 +39,7 @@ A number of built-in components are provided by the `@pretendonetwork/yeah` modu
 
 Creates an in-lined `<script>` tag with the given source. Example:
 
-```js
+```tsx
 import InlineScript from '@pretendonetwork/yeah/components/InlineScript';
 // import { InlineScript } from '@pretendonetwork/yeah/components'; // * This also works
 import { Script } from '@pretendonetwork/yeah/components'; // * Alias of InlineScript
@@ -59,7 +59,7 @@ export function Page(ctx: PageContextWithParams<Params>) {
 
 Creates an in-lined `<script>` tag with the given source. Example:
 
-```js
+```tsx
 import InlineStyle from '@pretendonetwork/yeah/components/InlineStyle';
 // import { InlineStyle } from '@pretendonetwork/yeah/components'; // * This also works
 import { Style } from '@pretendonetwork/yeah/components'; // * Alias of InlineStyle
@@ -149,6 +149,30 @@ export async function Page(ctx: PageContext) {
 		<button hx-get={`/users/${ctx.request.params.pid}`}>
 			HTMX Test
 		</button>
+	);
+}
+```
+
+Additionally, if a `ClientScript()` function is exported on a page, the contents of this function will be injected into the page (both when using partials and full pages). This function should be treated as if it is an in-lined `<script>` tag on the page. It ***CANNOT*** access ***ANY*** server data (including imported modules). This is provided as an alternative to using `InlineScript`, as `ClientScript()` retains features like syntax highlighting, IntelliSense, etc. Example:
+
+```tsx
+import type { PageContextWithParams } from '@pretendonetwork/yeah/context';
+
+type Params = {
+	pid: string;
+};
+
+export function ClientScript() {
+	// * This runs on the client. No server data, including imported modules
+	// * can be accessed here. Treat this as if you wrote an in-lined <script>
+	// * tag on the page.
+	console.log('test console.log');
+	alert('test alert');
+}
+
+export function Page(ctx: PageContextWithParams<Params>) {
+	return (
+		<main>hello user {ctx.request.params.pid}</main>
 	);
 }
 ```
