@@ -31,6 +31,52 @@ See the `examples` folder for example usages.
 
 # Features
 
+## Components
+
+A number of built-in components are provided by the `@pretendonetwork/yeah` module.
+
+### `InlineScript`
+
+Creates an in-lined `<script>` tag with the given source. Example:
+
+```js
+import InlineScript from '@pretendonetwork/yeah/components/InlineScript';
+// import { InlineScript } from '@pretendonetwork/yeah/components'; // * This also works
+import { Script } from '@pretendonetwork/yeah/components'; // * Alias of InlineScript
+
+export function Page(ctx: PageContextWithParams<Params>) {
+    return (
+        <div>
+            <main>hello user {ctx.request.params.pid}</main>
+            <InlineScript src="console.log('1')"></InlineScript>
+            <Script src="console.log('2')"></Script>
+        </div>
+    );
+}
+```
+
+### `InlineScript`
+
+Creates an in-lined `<script>` tag with the given source. Example:
+
+```js
+import InlineStyle from '@pretendonetwork/yeah/components/InlineStyle';
+// import { InlineStyle } from '@pretendonetwork/yeah/components'; // * This also works
+import { Style } from '@pretendonetwork/yeah/components'; // * Alias of InlineStyle
+
+export function Page(ctx: PageContextWithParams<Params>) {
+    return (
+        <div>
+            <main>hello user {ctx.request.params.pid}</main>
+            <InlineStyle src="body{color: red;}"></Style>
+            <Style src="body{color: red;}"></Style>
+        </div>
+    );
+}
+```
+
+### `InlineStyle`
+
 ## `yeah.config.ts`
 
 Exports a single object as its default export. This object lets you set the config for the app, including full Express configuration. This can be used to effectively bootstrap the entire application. For example:

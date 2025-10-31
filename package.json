@@ -17,7 +17,9 @@
     "@types/express": "^5.0.5",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.9.2",
+    "@types/react": "^19.2.2",
     "eslint": "^8.57.1",
+    "tsup": "^8.5.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
@@ -25,7 +27,7 @@
     "express": "^5.1.0",
     "fs-extra": "^11.3.2",
     "glob": "^11.0.3",
-    "tsup": "^8.5.0"
+    "react": "^19.2.0"
   },
   "exports": {
     "./context": {
@@ -37,6 +39,16 @@
       "types": "./dist/sse.d.cts",
       "import": "./dist/sse.js",
       "require": "./dist/sse.cjs"
+    },
+    "./components": {
+      "types": "./dist/components.d.cts",
+      "import": "./dist/components.js",
+      "require": "./dist/components.cjs"
+    },
+    "./components/*": {
+      "types": "./dist/components/*.d.cts",
+      "import": "./dist/components/*.js",
+      "require": "./dist/components/*.cjs"
     }
   }
 }
