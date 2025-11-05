@@ -1,6 +1,6 @@
 # Yeah!
 
-"Yeah!" is a minimal "framework" intended to make writing web applications for 3DS/Wii U titles (Miiverse, TVii, etc.) feel a bit more modern. The framework acts essentially as just a wrapper for Express routes with some enforced project structure conventions and a couple extra features sprinkled on top, still giving you access to the underlying Express data if you should need it to manage a request in effectively the same way you would a normal Express application. The goal is not to be a powerful web app framework like Nuxt/Next. The main goals are:
+"Yeah!" is a minimal framework intended to make writing web applications for 3DS/Wii U titles (Miiverse, TVii, etc.) feel a bit more modern. The framework acts essentially as just a wrapper for Express routes with some enforced project structure conventions and a couple extra features sprinkled on top, still giving you access to the underlying Express data if you should need it to manage a request in effectively the same way you would a normal Express application. The goal is not to be a powerful web app framework like Nuxt/Next. The main goals are:
 
 - Feel modern
 - Automatic JSX SSR. Every route (both `pages` and `server`) run *on the server*, so you can do things like querying Mongo in a `pages` route or do SSE in a `server` route.
@@ -35,7 +35,7 @@ See the `examples` folder for example usages.
 
 A number of built-in components are provided by the `@pretendonetwork/yeah` module.
 
-### `InlineScript`
+### `InlineScript` / `Script`
 
 Creates an in-lined `<script>` tag with the given source. Example:
 
@@ -43,11 +43,12 @@ Creates an in-lined `<script>` tag with the given source. Example:
 import InlineScript from '@pretendonetwork/yeah/components/InlineScript';
 // import { InlineScript } from '@pretendonetwork/yeah/components'; // * This also works
 import { Script } from '@pretendonetwork/yeah/components'; // * Alias of InlineScript
+import type { PageContext } from '@pretendonetwork/yeah/context';
 
-export function Page(ctx: PageContextWithParams<Params>) {
+export function Page(ctx: PageContext) {
     return (
         <div>
-            <main>hello user {ctx.request.params.pid}</main>
+            <main>hello world</main>
             <InlineScript src="console.log('1')"></InlineScript>
             <Script src="console.log('2')"></Script>
         </div>
@@ -55,27 +56,26 @@ export function Page(ctx: PageContextWithParams<Params>) {
 }
 ```
 
-### `InlineScript`
+### `InlineStyle` / `Style`
 
-Creates an in-lined `<script>` tag with the given source. Example:
+Creates an in-lined `<style>` tag with the given source. Example:
 
 ```tsx
 import InlineStyle from '@pretendonetwork/yeah/components/InlineStyle';
 // import { InlineStyle } from '@pretendonetwork/yeah/components'; // * This also works
 import { Style } from '@pretendonetwork/yeah/components'; // * Alias of InlineStyle
+import type { PageContext } from '@pretendonetwork/yeah/context';
 
-export function Page(ctx: PageContextWithParams<Params>) {
+export function Page(ctx: PageContext) {
     return (
         <div>
-            <main>hello user {ctx.request.params.pid}</main>
+            <main>hello world</main>
             <InlineStyle src="body{color: red;}"></Style>
             <Style src="body{color: red;}"></Style>
         </div>
     );
 }
 ```
-
-### `InlineStyle`
 
 ## `yeah.config.ts`
 
@@ -122,29 +122,33 @@ export default function App({ children }: { children: React.ReactNode }) {
 
 ## `src/pages`
 
-Routes that are intended to be rendered by the browser to the user. Uses path based routing. File names determine things like the HTTP method and query parameters. If no HTTP method is in the file name (such as `src/pages/index.tsx`) then the `app.all` Express handler is used.
+Routes that are intended to be rendered by the browser to the user. Uses path based routing. File names determine things like the HTTP method and query parameters. If no HTTP method is in the file name (such as `src/pages/index.tsx`) then the `app.all` Express handler is used. Files named `index.tsx` will be routed based on their parent folder name (`src/pages/index.tsx` becomes the route `/`). Text wrapped in brackers, such as `src/pages/users/[pid].get.tsx`, will be treated as a route param and provided via the `ctx` context.
 
-Each page MUST export a `Page` function, which returns JSX to be used as a child of the selected layout. Can only export a `Partial` function which is used when the page is requested with HTMX/NWFX (both are supported). A `config` object can also be exported to configure parts of the route handler.
+Each page MUST export a `Page` function, which returns JSX to be used as a child of the selected layout. Can also optionally export a `Partial` function which is used when the page is requested with HTMX/NWFX (both are supported). A `config` object can also be exported to configure parts of the route handler.
 
 For example:
 
 ```tsx
 // * src/pages/users/[pid].get.tsx
 import authMiddleware from '@/middleware/auth';
-import type { PageContext } from '@pretendonetwork/yeah/context';
+import type { PageContextWithParams } from '@pretendonetwork/yeah/context';
+
+type Params = {
+	pid: string;
+};
 
 export const config = {
 	middleware: [ authMiddleware ], // * Runs before either function here is called
 	// * layout: 'nested/deeply/test' // This will load the layout from "src/layouts/nested/deeply/test.tsx" instead of "src/App.tsx"
 };
 
-export async function Partial(ctx: PageContext) {
+export async function Partial(ctx: PageContextWithParams<Params>) {
 	return (
 		<div>From partial</div>
 	);
 }
 
-export async function Page(ctx: PageContext) {
+export async function Page(ctx: PageContextWithParams<Params>) {
 	return (
 		<button hx-get={`/users/${ctx.request.params.pid}`}>
 			HTMX Test
@@ -153,14 +157,10 @@ export async function Page(ctx: PageContext) {
 }
 ```
 
-Additionally, if a `ClientScript()` function is exported on a page, the contents of this function will be injected into the page (both when using partials and full pages). This function should be treated as if it is an in-lined `<script>` tag on the page. It ***CANNOT*** access ***ANY*** server data (including imported modules). This is provided as an alternative to using `InlineScript`, as `ClientScript()` retains features like syntax highlighting, IntelliSense, etc. Example:
+Additionally, if a `ClientScript()` function is exported on a page, the contents of this function will be injected into the page (both when using partials and full pages). This function should be treated as if it is an in-lined `<script>` tag on the page. It ***CANNOT*** access ***ANY*** server data (including imported modules). This is provided as an alternative to using [`InlineScript`](#inlinescript--script), as `ClientScript()` retains features like syntax highlighting, IntelliSense, etc. Example:
 
 ```tsx
-import type { PageContextWithParams } from '@pretendonetwork/yeah/context';
-
-type Params = {
-	pid: string;
-};
+import type { PageContext } from '@pretendonetwork/yeah/context';
 
 export function ClientScript() {
 	// * This runs on the client. No server data, including imported modules
@@ -170,9 +170,9 @@ export function ClientScript() {
 	alert('test alert');
 }
 
-export function Page(ctx: PageContextWithParams<Params>) {
+export function Page(ctx: PageContext) {
 	return (
-		<main>hello user {ctx.request.params.pid}</main>
+		<main>hello world</main>
 	);
 }
 ```
@@ -181,14 +181,16 @@ export function Page(ctx: PageContextWithParams<Params>) {
 
 Routes that are ***NOT*** intended to be rendered by the browser to the user (though they CAN be used to render pages), such as API endpoints. Uses path based routing. File names determine things like the HTTP method and query parameters. Name is taken from Nuxt, so this might change to be less confusing (it seems to imply `pages` routes are not run on the server).
 
+Files named `index.ts` will be routed based on their parent folder name (`src/server/api/users/index.ts` becomes the route `/api/users`). Text wrapped in brackers, such as `src/server/api/users/[pid].ts`, will be treated as a route param and provided via the `ctx` context.
+
 Each file MUST export one of the following:
 
--  A `Route` function
+- A `Route` function
 - At least one of `Get`, `Post`, `Put`, or `Delete` (all 4 may be used however)
 
-If no HTTP method is in the file name (such as `src/server/api/new_post.ts`), and `Route` is exported, then `app.all` is used an no other functions can be exported. If no HTTP method is in the file name, and `Route` is NOT exported, then one (or more) of the 4 HTTP method functions MUST be exported and a separate `app.METHOD` handler is created for each HTTP method handler.
+If no HTTP method is in the file name (such as `src/server/api/new_post.ts`), and `Route` is exported, then the Express `app.all` handler is used and no other exported HTTP functions will be respected. If no HTTP method is in the file name, and `Route` is NOT exported, then one (or more) of the 4 HTTP method functions MUST be exported and a separate `app.METHOD` handler is created for each exported HTTP method handler.
 
-If an HTTP method is in the file name (such as `src/server/api/new_post.post.ts`), then ***ONLY*** `Route` is used and the `app.METHOD` is created using the HTTP method from the file name.
+If an HTTP method is in the file name (such as `src/server/api/new_post.post.ts`), then ***ONLY*** `Route` is used and the `app.METHOD` is created using the HTTP method from the file name and no other exported HTTP functions will be respected.
 
 A `config` object can also be exported to configure parts of the route handler.
 
@@ -213,7 +215,7 @@ export async function Delete(ctx: Context) {
 
 ## `src/middleware`
 
-Route middleware. Works for both `src/pages` and `src/server` routes. The location `src/middleware` is not enforced, as they can be imported from anywhere, but it should be used by convention unless theres good reason not to. Each middleware exports a default function that consumes a `ctx` context. Using the `ctx.request`, `ctx.response` and `ctx.next` values these middleware can be used exactly the same as regular Express middleware. For example:
+Route middleware. Works for both `src/pages` and `src/server` routes. The location `src/middleware` is not enforced, as they can be imported from anywhere, but the `src/middleware` folder should be used by convention unless theres good reason not to. Each middleware exports a default function that consumes a `ctx` context. Using the `ctx.request`, `ctx.response` and `ctx.next` values these middleware can be used exactly the same as regular Express middleware. If `ctx.next()` is never called, or the `ctx.response` has already had data sent to it, then the request ends in that middleware and does not continue to either the next middleware in the chain nor the actual route handler. For example:
 
 ```ts
 import type { MiddlewareContext } from '@pretendonetwork/yeah/context';
@@ -231,13 +233,16 @@ export default async function authMiddleware(ctx: MiddlewareContext) {
 
 ## `src/components`
 
-Resuable JSX components. The location `src/components` is not enforced, as they can be imported from anywhere, but it should be used by convention unless theres good reason not to.
+Resuable JSX components. The location `src/components` is not enforced, as they can be imported from anywhere, but the `src/components` folder should be used by convention unless theres good reason not to.
 
 ## `src/layouts`
 
-Defines alternative root layouts for pages. The file name becomes the layout name used by pages. If a layout is defined and is then used by a page, then the configured layout is used instead of the `src/App.tsx` layout for that page. For example:
+Defines alternative root layouts for pages. The file path becomes the layout name used by pages. If a layout is defined and is then used by a page, then the configured layout is used instead of the `src/App.tsx` layout for that page. For example:
 
 ```tsx
+// * src/layouts/custom
+// * Now a page can set "custom" as their layout in the pages exported config to
+// * use this as the pages root layout, instead of `src/App.tsx`
 export default function CustomLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en">
@@ -264,12 +269,12 @@ A "context" passed into server/page/middleware handler functions. The `ctx` argu
 
 - `request` - Express `Request` object.
 - `response` - Express `Response` object.
-- `data` - Custom data, typically set by the middleware (for things like middleware to pass data between each other and the route handler).
+- `data` - Custom data, typically set by the middleware (for things like middleware to pass data between each other and the route handler). This is effectively the same as Express locals.
 
 The following 3 main context types are provided:
 
-- `Context` - Main, generic, context. As the above 3 mentioned fields.
-- `MiddlewareContext` - Context to be used in middleware. Has an additional `next()` function.
+- `Context` - Main, generic, context. Has the above 3 mentioned fields.
+- `MiddlewareContext` - Context to be used in middleware. Has an additional `next()` function to signal the middleware chain to continue.
 - `PageContext` - Context to be used with pages. Alias of `Context` under the hood, used for different visual contexts.
 
 All 3 main context types are generics which can optionall take in the following 6 types:
@@ -279,7 +284,7 @@ All 3 main context types are generics which can optionall take in the following 
 - `ReqBody` - Same as Express. Types `ctx.request.body`.
 - `ReqQuery` - Same as Express. Types `ctx.request.query`.
 - `Locals` - Same as Express. Types `ctx.request.locals`.
-- `Data` - Same as Express. Types `ctx.data`.
+- `Data` - Types `ctx.data`.
 
 Additionally, each of the 3 main context types has 4 sub-types. These sub-types can be used in contexts which a route only expects one type of field to be typed, reducing noise:
 
@@ -290,7 +295,7 @@ Additionally, each of the 3 main context types has 4 sub-types. These sub-types 
 
 ## SSE
 
-[SSE](https://en.wikipedia.org/wiki/Server-sent_events) is supported out of the box as a native feature. To enable SSE create a route in `src/server` and use the `setupSSE` function with a unique ID for the user and the `ctx`. To send events use either `sendEvent` to send an event to a specific user, or `broadcast` to send the event to all users. For example:
+[SSE](https://en.wikipedia.org/wiki/Server-sent_events) is supported out of the box. To enable SSE create a route in `src/server` and use the `setupSSE` function with a unique ID for the user and the `ctx`. To send events use either `sendEvent` to send an event to a specific user, or `broadcast` to send the event to all users. For example:
 
 ```ts
 // * src/server/sse.ts
@@ -314,22 +319,23 @@ export async function Get(ctx: Context) {
 // * src/pages/index.tsx
 import type { PageContext } from '@pretendonetwork/yeah/context';
 
+export function ClientScript() {
+	var eventSource = new EventSource('/sse');
+
+	eventSource.addEventListener('timestamp', function(event) {
+		console.log('Timestamp event:', event.data);
+	});
+
+	eventSource.onerror = function() {
+		console.log('Connection lost');
+	};
+}
+
 export function Page(ctx: PageContext) {
 	return (
 		<div>
-			<script dangerouslySetInnerHTML={{__html: `
-				var eventSource = new EventSource('/sse');
-
-				eventSource.addEventListener('timestamp', function(event) {
-					console.log('Timestamp event:', event.data);
-				});
-
-				eventSource.onerror = function() {
-					console.log('Connection lost');
-				};
-			`}} />
+			<p>hello world</p>
 		</div>
 	);
 }
-
 ```
