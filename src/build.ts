@@ -133,8 +133,6 @@ export async function build(appRoot: string): Promise<void> {
 	const layoutDefinitions = await createLayoutDefinitions(appRoot, layouts);
 	const allRouteDefinitions = [...pageRouteDefinitions, ...serverRouteDefinitions];
 
-	console.log(pageRouteDefinitions);
-
 	for (const pageRouteDefinition of pageRouteDefinitions) {
 		for (const serverRouteDefinition of serverRouteDefinitions) {
 			if (pageRouteDefinition.route === serverRouteDefinition.route && pageRouteDefinition.method === serverRouteDefinition.method) {
@@ -278,7 +276,7 @@ export async function build(appRoot: string): Promise<void> {
 
 		if (routeDefinition.hasClientScript) {
 			server += `\tconst scriptContent = ${routeDefinition.importName}.ClientScript.toString();\n`;
-			server += '\tconst scriptTag = React.createElement(\'script\', { dangerouslySetInnerHTML: { __html: \`(\${scriptContent})()\` } });\n';
+			server += '\tconst scriptTag = React.createElement(\'script\', { dangerouslySetInnerHTML: { __html: `(${scriptContent})()` } });\n';
 			server += '\tjsx = React.createElement(React.Fragment, null, jsx, scriptTag);\n';
 		}
 
@@ -295,7 +293,6 @@ export async function build(appRoot: string): Promise<void> {
 		}
 
 		server += '\t}\n';
-
 		server += '\tresponse.send(html);\n';
 		server += '});\n';
 	}
@@ -389,8 +386,6 @@ async function createPageRouteDefinitions(appRoot: string, pages: string[]): Pro
 		});
 		const route = pathToRoute('pages', relativePath);
 		const method = fileNameToHTTPMethod(relativePath);
-
-		console.log(routeModule);
 
 		definitions.push({
 			importName,
