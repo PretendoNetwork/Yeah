@@ -286,12 +286,63 @@ All 3 main context types are generics which can optionall take in the following 
 - `Locals` - Same as Express. Types `ctx.request.locals`.
 - `Data` - Types `ctx.data`.
 
-Additionally, each of the 3 main context types has 4 sub-types. These sub-types can be used in contexts which a route only expects one type of field to be typed, reducing noise:
+Additionally, each of the 3 main context types has 5 sub-types. These sub-types can be used in contexts which a route only expects one type of field to be typed, reducing noise:
 
 - `TYPEWithParams` (For example, `PageContextWithParams`) - Types `ctx.request.params` ONLY.
 - `TYPEWithBody` (For example, `PageContextWithBody`) - Types `ctx.request.body` ONLY.
 - `TYPEWithQuery` (For example, `PageContextWithQuery`) - Types `ctx.request.query` ONLY.
+- `TYPEWithHeaders` (For example, `PageContextWithHeaders`) - Types `ctx.request.headers` ONLY.
 - `TYPEWithData` (For example, `PageContextWithData`) - Types `ctx.data` ONLY.
+
+### `validateContext()`
+
+In addition to the generic types for contexts, a `validateContext()` function is also provided. This function takes in at least 1 argument, the [Zod](https://zod.dev) schemas:
+
+```ts
+type SchemaConfig = {
+	ctx: Context<any, any, any, any, any, any, any>; // * The context to validate
+	params?: z.ZodTypeAny; // * Validates ctx.request.params
+	query?: z.ZodTypeAny; // * Validates ctx.request.query
+	headers?: z.ZodTypeAny; // * Validates ctx.request.headers
+	body?: z.ZodTypeAny; // * Validates ctx.request.body
+	data?: z.ZodTypeAny; // * Validates ctx.data
+};
+```
+
+`validateContext` will either return a typed context, or call an optional callback function with the typed context. An error is thrown if any of the Zod schemas do not pass.
+
+```tsx
+import { z } from 'zod';
+import { validateContext } from '@pretendonetwork/yeah/context';
+import type { PageContext } from '@pretendonetwork/yeah/context';
+
+const paramsSchema = z.object({
+	pid: z.coerce.number()
+});
+
+export function Page(ctx: PageContext) {
+	// * This also works
+	/*
+	const typedContext = validateContext({
+		ctx,
+		params: paramsSchema
+	});
+
+	return (
+		<main>hello user {typedContext.request.params.pid}</main>
+	);
+	*/
+
+	return validateContext({
+		ctx,
+		params: paramsSchema
+	}, (ctx) => {
+		return (
+			<main>hello user {ctx.request.params.pid}</main>
+		);
+	})
+}
+```
 
 ## SSE
 

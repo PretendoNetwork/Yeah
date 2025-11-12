@@ -1,25 +1,30 @@
-import authMiddleware from '@/middleware/auth';
-import type { PageContextWithParams } from '@pretendonetwork/yeah/context';
+import { z } from 'zod';
+import { validateContext } from '@pretendonetwork/yeah/context';
+import type { PageContext } from '@pretendonetwork/yeah/context';
 
-type Params = {
-	pid: string;
-};
+const paramsSchema = z.object({
+	pid: z.coerce.number()
+});
 
-export const config = {
-	middleware: [ authMiddleware ],
-	// layout: 'nested/deeply/test'
-};
+export function Page(ctx: PageContext) {
+	// * This also works
+	/*
+	const typedContext = validateContext({
+		ctx,
+		params: paramsSchema
+	});
 
-export function ClientScript() {
-	// * This runs on the client. No server data, including imported modules
-	// * can be accessed here. Treat this as if you wrote an in-lined <script>
-	// * tag on the page.
-	console.log('test console.log');
-	alert('test alert');
-}
-
-export function Page(ctx: PageContextWithParams<Params>) {
 	return (
-		<main>hello user {ctx.request.params.pid}</main>
+		<main>hello user {typedContext.request.params.pid}</main>
 	);
+	*/
+
+	return validateContext({
+		ctx,
+		params: paramsSchema
+	}, (ctx) => {
+		return (
+			<main>hello user {ctx.request.params.pid}</main>
+		);
+	})
 }
