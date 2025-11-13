@@ -293,7 +293,9 @@ export async function build(appRoot: string): Promise<void> {
 		}
 
 		server += '\t}\n';
-		server += '\tresponse.send(html);\n';
+		server += '\tif (!ctx.response.headersSent) {\n';
+		server += '\t\tresponse.send(html);\n';
+		server += '\t}\n';
 		server += '});\n';
 	}
 
