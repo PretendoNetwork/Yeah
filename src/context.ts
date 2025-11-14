@@ -94,7 +94,7 @@ export function validateContext<
 	InferOr<Config['headers'], any>,
 	any,
 	InferOr<Config['data'], any>
->{
+> {
 	const ctx = schemas.ctx;
 
 	if (schemas.params) {
