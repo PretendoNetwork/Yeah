@@ -73,6 +73,14 @@ type SchemaConfig = {
 
 type InferOr<T extends z.ZodTypeAny | undefined, Default> = T extends z.ZodTypeAny ? z.infer<T> : Default;
 
+type ValidationErrors = {
+	params?: z.ZodError;
+	query?: z.ZodError;
+	headers?: z.ZodError;
+	body?: z.ZodError;
+	data?: z.ZodError;
+};
+
 export function validateContext<
 	Config extends SchemaConfig
 >(
@@ -122,4 +130,83 @@ export function validateContext<
 	}
 
 	return callback(ctx);
+}
+
+export function safeValidateContext<
+	Config extends SchemaConfig
+>(
+	schemas: Config,
+	callback?: (ctx: Context<
+		InferOr<Config['params'], any> & ParamsDictionary,
+		any,
+		InferOr<Config['body'], any>,
+		InferOr<Config['query'], any> & ParsedQs,
+		InferOr<Config['headers'], any>,
+		any,
+		InferOr<Config['data'], any>
+	> & { validationErrors: ValidationErrors }) => any
+): Context<
+	InferOr<Config['params'], any> & ParamsDictionary,
+	any,
+	InferOr<Config['body'], any>,
+	InferOr<Config['query'], any> & ParsedQs,
+	InferOr<Config['headers'], any>,
+	any,
+	InferOr<Config['data'], any>
+> & { validationErrors: ValidationErrors } {
+	const ctx = schemas.ctx;
+	const validationErrors: ValidationErrors = {};
+
+	if (schemas.params) {
+		const result = schemas.params.safeParse(ctx.request.params);
+		if (result.success) {
+			(ctx.request.params as any) = result.data;
+		} else {
+			validationErrors.params = result.error;
+		}
+	}
+
+	if (schemas.query) {
+		const result = schemas.query.safeParse(ctx.request.query);
+		if (result.success) {
+			(ctx.request.query as any) = result.data;
+		} else {
+			validationErrors.query = result.error;
+		}
+	}
+
+	if (schemas.headers) {
+		const result = schemas.headers.safeParse(ctx.request.headers);
+		if (result.success) {
+			(ctx.request.headers as any) = result.data;
+		} else {
+			validationErrors.headers = result.error;
+		}
+	}
+
+	if (schemas.body) {
+		const result = schemas.body.safeParse(ctx.request.body);
+		if (result.success) {
+			(ctx.request.body as any) = result.data;
+		} else {
+			validationErrors.body = result.error;
+		}
+	}
+
+	if (schemas.data) {
+		const result = schemas.data.safeParse(ctx.data);
+		if (result.success) {
+			(ctx.data as any) = result.data;
+		} else {
+			validationErrors.data = result.error;
+		}
+	}
+
+	const ctxWithErrors = Object.assign(ctx, { validationErrors });
+
+	if (!callback) {
+		return ctxWithErrors as any;
+	}
+
+	return callback(ctxWithErrors);
 }

@@ -294,9 +294,9 @@ Additionally, each of the 3 main context types has 5 sub-types. These sub-types 
 - `TYPEWithHeaders` (For example, `PageContextWithHeaders`) - Types `ctx.request.headers` ONLY.
 - `TYPEWithData` (For example, `PageContextWithData`) - Types `ctx.data` ONLY.
 
-### `validateContext()`
+### `validateContext()` / `safeValidateContext()`
 
-In addition to the generic types for contexts, a `validateContext()` function is also provided. This function takes in at least 1 argument, the [Zod](https://zod.dev) schemas:
+In addition to the generic types for contexts, functions `validateContext()` and `safeValidateContext()` are provided to add type safety to request contexts. These function take in at least 1 argument, the [Zod](https://zod.dev) schemas:
 
 ```ts
 type SchemaConfig = {
@@ -309,7 +309,7 @@ type SchemaConfig = {
 };
 ```
 
-`validateContext` will either return a typed context, or call an optional callback function with the typed context. An error is thrown if any of the Zod schemas do not pass.
+Each will either return a typed context, or call an optional callback function with the typed context. The difference between `validateContext()` and `safeValidateContext()` is that `validateContext()` will immediately throw an error on the first validation error, whereas `safeValidateContext()` will attach a `validationErrors` field to `ctx` with the validation errors.
 
 ```tsx
 import { z } from 'zod';
