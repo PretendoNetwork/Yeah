@@ -3,6 +3,17 @@ import type { Request, Response } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 
+/**
+ * Core context object passed to route handlers/middleware
+ *
+ * @template Params - URL route parameters
+ * @template ResBody - Response body type
+ * @template ReqBody - Request body type
+ * @template ReqQuery - Query string parameters type
+ * @template ReqHeaders - Request headers type
+ * @template Locals - Express locals type
+ * @template Data - Additional context data type
+ */
 export type Context<
 	Params extends ParamsDictionary = ParamsDictionary,
 	ResBody = any,
@@ -19,6 +30,17 @@ export type Context<
 	data: Data;
 };
 
+/**
+ * Context object for middleware handlers. Includes a `next` function
+ *
+ * @template Params - URL route parameters
+ * @template ResBody - Response body type
+ * @template ReqBody - Request body type
+ * @template ReqQuery - Query string parameters type
+ * @template ReqHeaders - Request headers type
+ * @template Locals - Express locals type
+ * @template Data - Additional context data type
+ */
 export type MiddlewareContext<
 	Params extends ParamsDictionary = ParamsDictionary,
 	ResBody = any,
@@ -31,7 +53,17 @@ export type MiddlewareContext<
 	next: () => Promise<void>;
 };
 
-// * Mostly just an alias of Context, named differently for different visual contexts
+/**
+ * Context object for page route handlers (alias of Context for visual clarity)
+ *
+ * @template Params - URL route parameters
+ * @template ResBody - Response body type
+ * @template ReqBody - Request body type
+ * @template ReqQuery - Query string parameters type
+ * @template ReqHeaders - Request headers type
+ * @template Locals - Express locals type
+ * @template Data - Additional context data type
+ */
 export type PageContext<
 	Params extends ParamsDictionary = ParamsDictionary,
 	ResBody = any,
@@ -44,22 +76,109 @@ export type PageContext<
 
 // * Supplementary types
 
+/**
+ * Context with typed URL route parameters
+ *
+ * @template Params - URL route parameters
+ */
 export type ContextWithParams<Params extends ParamsDictionary> = Context<Params>;
+
+/**
+ * Context with typed request body
+ *
+ * @template ReqBody - Request body type
+ */
 export type ContextWithBody<ReqBody> = Context<ParamsDictionary, any, ReqBody>;
+
+/**
+ * Context with typed query string parameters
+ *
+ * @template ReqQuery - Query string parameters type
+ */
 export type ContextWithQuery<ReqQuery extends ParsedQs> = Context<ParamsDictionary, any, any, ReqQuery>;
+
+/**
+ * Context with typed request headers
+ *
+ * @template ReqHeaders - Request headers type
+ */
 export type ContextWithHeaders<ReqHeaders> = Context<ParamsDictionary, any, any, ParsedQs, ReqHeaders>;
+
+/**
+ * Context with typed additional data
+ *
+ * @template Data - Additional context data type
+ */
 export type ContextWithData<Data extends Record<string, any>> = Context<ParamsDictionary, any, any, ParsedQs, any, Record<string, any>, Data>;
 
+/**
+ * Page context with typed URL route parameters
+ *
+ * @template Params - URL route parameters
+ */
 export type PageContextWithParams<Params extends ParamsDictionary> = PageContext<Params>;
+
+/**
+ * Page context with typed request body
+ *
+ * @template ReqBody - Request body type
+ */
 export type PageContextWithBody<ReqBody> = PageContext<ParamsDictionary, any, ReqBody>;
+
+/**
+ * Page context with typed query string parameters
+ *
+ * @template ReqQuery - Query string parameters type
+ */
 export type PageContextWithQuery<ReqQuery extends ParsedQs> = PageContext<ParamsDictionary, any, any, ReqQuery>;
+
+/**
+ * Page context with typed request headers
+ *
+ * @template ReqHeaders - Request headers type
+ */
 export type PageContextWithHeaders<ReqHeaders> = PageContext<ParamsDictionary, any, any, ParsedQs, ReqHeaders>;
+
+/**
+ * Page context with typed additional data
+ *
+ * @template Data - Additional context data type
+ */
 export type PageContextWithData<Data extends Record<string, any>> = PageContext<ParamsDictionary, any, any, ParsedQs, any, Record<string, any>, Data>;
 
+/**
+ * Middleware context with typed URL route parameters
+ *
+ * @template Params - URL route parameters
+ */
 export type MiddlewareContextWithParams<Params extends ParamsDictionary> = MiddlewareContext<Params>;
+
+/**
+ * Middleware context with typed request body
+ *
+ * @template ReqBody - Request body type
+ */
 export type MiddlewareContextWithBody<ReqBody> = MiddlewareContext<ParamsDictionary, any, ReqBody>;
+
+/**
+ * Middleware context with typed query string parameters
+ *
+ * @template ReqQuery - Query string parameters type
+ */
 export type MiddlewareContextWithQuery<ReqQuery extends ParsedQs> = MiddlewareContext<ParamsDictionary, any, any, ReqQuery>;
+
+/**
+ * Middleware context with typed request headers
+ *
+ * @template ReqHeaders - Request headers type
+ */
 export type MiddlewareContextWithHeaders<ReqHeaders> = MiddlewareContext<ParamsDictionary, any, any, ParsedQs, ReqHeaders>;
+
+/**
+ * Middleware context with typed additional data
+ *
+ * @template Data - Additional context data type
+ */
 export type MiddlewareContextWithData<Data extends Record<string, any>> = MiddlewareContext<ParamsDictionary, any, any, ParsedQs, any, Record<string, any>, Data>;
 
 type SchemaConfig = {
@@ -81,6 +200,16 @@ type ValidationErrors = {
 	data?: z.ZodError;
 };
 
+/**
+ * Validates context fields using Zod schemas. Throws an error on the first validation error
+ *
+ * @template Config - Schema configuration type
+ * @param schemas - An object containing the context and optional Zod schemas for params, query, headers, body, and data
+ * @param callback - Optional callback function that receives the validated context
+ *
+ * @returns The validated context with inferred types from the schemas, if `callback` is not specified
+ * @throws {z.ZodError} When any validation fails
+ */
 export function validateContext<
 	Config extends SchemaConfig
 >(
@@ -132,6 +261,16 @@ export function validateContext<
 	return callback(ctx);
 }
 
+/**
+ * Validates context fields using Zod schemas without throwing. Validation errors are attached to the context in a `validationErrors` field
+ *
+ * @template Config - Schema configuration type
+ * @param schemas - An object containing the context and optional Zod schemas for params, query, headers, body, and data
+ * @param callback - Optional callback function that receives the validated context
+ *
+ * @returns The validated context with inferred types from the schemas, if `callback` is not specified
+ * @throws {z.ZodError} When any validation fails
+ */
 export function safeValidateContext<
 	Config extends SchemaConfig
 >(
