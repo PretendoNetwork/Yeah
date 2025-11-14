@@ -7,7 +7,7 @@
   "scripts": {
     "lint": "eslint ./src",
     "lint:fix": "eslint ./src --fix",
-    "build": "tsup && tsc --noEmit"
+    "build": "tsup && tsc --emitDeclarationOnly --declaration && tsc-alias"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +19,7 @@
     "@types/node": "^24.9.2",
     "@types/react": "^19.2.2",
     "eslint": "^8.57.1",
+    "tsc-alias": "^1.8.16",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3"
   },
@@ -32,24 +33,34 @@
   },
   "exports": {
     "./context": {
-      "types": "./dist/context.d.cts",
+      "types": "./dist/context.d.ts",
       "import": "./dist/context.js",
       "require": "./dist/context.cjs"
     },
     "./sse": {
-      "types": "./dist/sse.d.cts",
+      "types": "./dist/sse.d.ts",
       "import": "./dist/sse.js",
       "require": "./dist/sse.cjs"
     },
     "./components": {
-      "types": "./dist/components.d.cts",
+      "types": "./dist/components.d.ts",
       "import": "./dist/components.js",
       "require": "./dist/components.cjs"
     },
     "./components/*": {
-      "types": "./dist/components/*.d.cts",
+      "types": "./dist/components/*.d.ts",
       "import": "./dist/components/*.js",
       "require": "./dist/components/*.cjs"
+    },
+    "./http-errors": {
+      "types": "./dist/http-errors/index.d.ts",
+      "import": "./dist/http-errors/index.js",
+      "require": "./dist/http-errors/index.cjs"
+    },
+    "./http-errors/*": {
+      "types": "./dist/http-errors/*.d.ts",
+      "import": "./dist/http-errors/*.js",
+      "require": "./dist/http-errors/*.cjs"
     }
   }
 }

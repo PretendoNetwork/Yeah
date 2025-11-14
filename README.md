@@ -21,6 +21,8 @@ project
 │   ├── pages
 │   ├── public
 │   ├── server
+│   ├── error.tsx
+│   ├── 404.tsx
 │   └── App.tsx
 └── yeah.config.ts
 ```
@@ -117,6 +119,101 @@ export default function App({ children }: { children: React.ReactNode }) {
 			</body>
 		</html>
 	);
+}
+```
+
+## Error management
+
+There are 2 main ways to handle errors:
+
+1. Manually handling errors in routes, explictly returning the data for the error (required in non-page routes, but is optional in page-routes).
+2. Throwing errors in page-routes and using generic error templates. Currently not supported in anything but page-routes.
+
+When an error is thrown, the following steps occur:
+
+1. If a `src/pages/_HTTP_STATUS.tsx` (such as `src/pages/_400.tsx`) template exists for the thrown status code, that template will be rendered with either the error message or error JSX given as children.
+	- If a `src/pages/_404.tsx` template exists, it will be automatically used for any 404 errors with the string `"Page not found"` as it's child.
+2. If a `src/pages/_HTTP_STATUS.tsx` template does not exist for the thrown status code, and a `src/pages/_error.tsx` template exists, that template will be rendered with either the error message or error JSX given as children.
+3. If neither `src/pages/_HTTP_STATUS.tsx` nor `src/pages/_error.tsx` exists, the error message or error JSX will be sent to the client directly.
+
+If an error has a `jsx` field, it will be used for responses instead of the error message. Otherwise the error message is used for responses.
+
+When throwing errors, you have multiple options:
+
+1. Throw a built-in HTTP error (such as `HTTPStatus400` / `BadRequest`).
+2. Throw your own custom HTTP error using the `HTTPError` class.
+3. Throw a generic error.
+
+### Built-in HTTP errors
+
+Yeah provides built-in error classes for all standard 4XX/5XX HTTP errors. These can be imported either by their status code, or by their message. For example:
+
+```ts
+import { HTTPStatus404, NotFound } from '@pretendonetwork/yeah/http-errors';
+
+const CustomNotFoundUI = () => {
+	return <div>User not found</div>;
+};
+
+export function Page(ctx: PageContext) {
+	// * Using status code
+	throw new HTTPStatus404(); // * Error message defaults to 'Not Found'
+
+	// * Alias of HTTPStatus404 (same as above)
+	throw new NotFound();
+
+	// * With JSX. The message is not used in the page render
+	throw new NotFound('User not found', CustomNotFoundUI);
+}
+```
+
+These error classes take in 2 optional parameters:
+
+1. `message` - The error message. Defaults to the HTTP status message.
+2. `jsx` - JSX element to render to the page.
+
+### Custom HTTP errors
+
+Yeah provides a generic HTTP error class for any HTTP errors not provided:
+
+```ts
+import { HTTPError } from '@pretendonetwork/yeah/http-errors';
+
+const CustomTeapotUI = () => {
+	return <div>Im a teapot</div>;
+};
+
+export function Page(ctx: PageContext) {
+	throw new HTTPError(418, "I'm a teapot");
+
+	// * With JSX. The message is not used in the page render
+	throw new HTTPError(418, "I'm a teapot", CustomTeapotUI);
+}
+```
+
+### Generic errors
+
+Yeah can handle generic errors, though this is not recommended as the HTTP error classes allow you to specify different templates for different HTTP errors and attach JSX to render. When a generic `Error` is thrown, only the `src/error.tsx` is looked for and the error message is used as the child. If `src/error.tsx` does not exist, the error message is sent to the client directly.
+
+```ts
+export function Page(ctx: PageContext) {
+	throw new Error('Something went wrong');
+}
+```
+
+### Manual Error Handling
+
+For non-page-routes, or when you need more control, handle errors manually:
+
+```ts
+// * src/server/api/users.get.ts
+export function Get(ctx: Context) {
+	try {
+		const user = getUser();
+		ctx.response.json(user);
+	} catch (error) {
+		ctx.response.status(500).json({ error: 'Failed to fetch user' });
+	}
 }
 ```
 

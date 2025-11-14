@@ -30,6 +30,18 @@ type LayoutDefinition = {
 
 colors.enable();
 
+const VALID_ERROR_FILES = [
+	'error',
+
+	'400', '401', '402', '403', '404', '405', '406', '407', '408',
+	'409', '410', '411', '412', '413', '414', '415', '416', '417',
+	'418', '421', '422', '423', '424', '425', '426', '428', '429',
+
+	'431', '451',
+	'500', '501', '502', '503', '504', '505', '506', '507', '508',
+	'510', '511'
+];
+
 // TODO - This can probably be improved I kinda suck at tsup configs
 const tsupCommonConfig: Options = {
 	bundle: true, // * Needed to make tsup automatically update local imports to use mjs
@@ -203,6 +215,16 @@ export async function build(appRoot: string): Promise<void> {
 		}
 	}
 
+	const errorPages: string[] = [];
+
+	for (const fileName of VALID_ERROR_FILES) {
+		const pagePath = path.join(appRoot, `src/pages/_${fileName}.tsx`);
+
+		if (fs.existsSync(pagePath)) {
+			errorPages.push(fileName);
+		}
+	}
+
 	let server = 'import url from \'node:url\';\n';
 	server += 'import path from \'node:path\';\n';
 	server += 'import express from \'express\';\n';
@@ -234,6 +256,11 @@ export async function build(appRoot: string): Promise<void> {
 		seenImports.add(routeDefinition.importPath);
 	}
 
+	for (const fileName of errorPages) {
+		server += `import error_${fileName}Handler from './pages/_${fileName}.mjs';\n`;
+		server += `globalThis.error_${fileName}Handler = error_${fileName}Handler;\n`;
+	}
+
 	server += '\n';
 	server += 'const __filename = url.fileURLToPath(import.meta.url);\n';
 	server += 'const __dirname = path.dirname(__filename);\n';
@@ -263,38 +290,54 @@ export async function build(appRoot: string): Promise<void> {
 	for (const routeDefinition of pageRouteDefinitions) {
 		server += `app.${routeDefinition.method}('${routeDefinition.route}', async (request, response) => {\n`;
 		server += '\tconst ctx = { request, response, data: {} };\n';
+		server += '\ttry {\n';
 
 		if (routeDefinition.hasMiddleware) {
-			server += `\tconst shouldContinue = await runMiddleware(${routeDefinition.importName}.config.middleware, ctx);\n`;
-			server += '\tif (!shouldContinue) {\n';
-			server += '\t\treturn;\n';
-			server += '\t}\n';
+			server += `\t\tconst shouldContinue = await runMiddleware(${routeDefinition.importName}.config.middleware, ctx);\n`;
+			server += '\t\tif (!shouldContinue) {\n';
+			server += '\t\t\treturn;\n';
+			server += '\t\t}\n';
 		}
 
-		server += '\tconst isPartial = request.headers[\'hx-request\'] === \'true\' || request.headers[\'nwfx-request\'] === \'true\';\n';
-		server += `\tlet jsx = isPartial ? await ${routeDefinition.importName}.Partial(ctx) : await ${routeDefinition.importName}.Page(ctx);\n`;
+		server += '\t\tconst isPartial = request.headers[\'hx-request\'] === \'true\' || request.headers[\'nwfx-request\'] === \'true\';\n';
+		server += `\t\tlet jsx = isPartial ? await ${routeDefinition.importName}.Partial(ctx) : await ${routeDefinition.importName}.Page(ctx);\n`;
 
 		if (routeDefinition.hasClientScript) {
-			server += `\tconst scriptContent = ${routeDefinition.importName}.ClientScript.toString();\n`;
-			server += '\tconst scriptTag = React.createElement(\'script\', { dangerouslySetInnerHTML: { __html: `(${scriptContent})()` } });\n';
-			server += '\tjsx = React.createElement(React.Fragment, null, jsx, scriptTag);\n';
+			server += `\t\tconst scriptContent = ${routeDefinition.importName}.ClientScript.toString();\n`;
+			server += '\t\tconst scriptTag = React.createElement(\'script\', { dangerouslySetInnerHTML: { __html: `(${scriptContent})()` } });\n';
+			server += '\t\tjsx = React.createElement(React.Fragment, null, jsx, scriptTag);\n';
 		}
 
-		server += '\tlet html = \'\';\n';
-		server += '\tif (isPartial) {\n';
-		server += `\t\thtml = renderToString(jsx);\n`;
-		server += '\t} else {\n';
+		server += '\t\tlet html = \'\';\n';
+		server += '\t\tif (isPartial) {\n';
+		server += `\t\t\thtml = renderToString(jsx);\n`;
+		server += '\t\t} else {\n';
 
 		if (routeDefinition.customLayout) {
 			const layout = layoutDefinitions.find(layoutDefinition => layoutDefinition.name === routeDefinition.customLayout)!;
-			server += `\t\thtml = renderToString(${layout.importName}({ children: jsx }));\n`;
+			server += `\t\t\thtml = renderToString(${layout.importName}({ children: jsx }));\n`;
 		} else {
-			server += '\t\thtml = renderToString(DefaultLayout({ children: jsx }));\n';
+			server += '\t\t\thtml = renderToString(DefaultLayout({ children: jsx }));\n';
 		}
 
-		server += '\t}\n';
-		server += '\tif (!ctx.response.headersSent) {\n';
-		server += '\t\tresponse.send(html);\n';
+		server += '\t\t}\n';
+		server += '\t\tif (!ctx.response.headersSent) {\n';
+		server += '\t\t\tresponse.send(html);\n';
+		server += '\t\t}\n';
+
+		server += '\t} catch (e) {\n';
+		server += '\t\tif (ctx.response.headersSent) {\n';
+		server += '\t\t\treturn;\n';
+		server += '\t\t}\n';
+		server += '\t\tlet html = \'\';\n';
+		server += '\t\tif (e.statusCode && globalThis[`error_${e.statusCode}Handler`]) {\n';
+		server += '\t\t\thtml = renderToString(globalThis[`error_${e.statusCode}Handler`]({ children: e.jsx ? e.jsx : e.message }));\n';
+		server += '\t\t} else if (globalThis[\'error_errorHandler\']) {\n';
+		server += '\t\t\thtml = renderToString(globalThis[\'error_errorHandler\']({ children: e.jsx ? e.jsx : e.message }));\n';
+		server += '\t\t} else {\n';
+		server += '\t\t\thtml = e.jsx ? renderToString(e.jsx) : e.message;\n';
+		server += '\t\t}\n';
+		server += '\t\tresponse.status(e.statusCode || 500).send(html);\n';
 		server += '\t}\n';
 		server += '});\n';
 	}
@@ -320,6 +363,16 @@ export async function build(appRoot: string): Promise<void> {
 		fs.cpSync(publicPath, path.join(appRoot, 'dist', 'public'), { recursive: true });
 		server += 'app.use(express.static(path.join(__dirname, \'public\')));\n';
 	}
+
+	server += 'app.use(async (request, response, next) => {\n';
+	server += '\tlet html = \'\';\n';
+	server += '\tif (globalThis[\'error_404Handler\']) {\n';
+	server += '\t\thtml = renderToString(globalThis[\'error_404Handler\']({ children: \'Page not found\' }));\n';
+	server += '\t} else {\n';
+	server += '\t\thtml = \'Not Found\';\n';
+	server += '\t}\n';
+	server += '\tresponse.status(404).send(html);\n';
+	server += '});\n';
 
 	server += '\n';
 	server += 'if (yeahConfig.configureServer) {\n';
@@ -366,7 +419,13 @@ async function createPageRouteDefinitions(appRoot: string, pages: string[]): Pro
 	const pagesRoot = path.join(appRoot, 'src');
 	const definitions: PageRouteDefinition[] = [];
 
-	for (const fullPath of pages) {
+	generate_page: for (const fullPath of pages) {
+		for (const errorFileName of VALID_ERROR_FILES) {
+			if (fullPath.endsWith(`/_${errorFileName}.tsx`)) {
+				continue generate_page;
+			}
+		}
+
 		const routeModule = await import(fullPath);
 
 		if (typeof routeModule.Page !== 'function') {
