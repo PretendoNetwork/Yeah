@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'fs-extra';
 import { glob } from 'glob';
-import tsup from 'tsup';
+import * as tsup from 'tsup';
 import colors from 'colors';
 import type { Options } from 'tsup';
 
@@ -126,23 +126,26 @@ async function transpile(appRoot: string): Promise<void> {
 	});
 }
 
-export async function build(appRoot: string): Promise<void> {
+export async function build(options: {
+	appRoot: string;
+	hotReloadPort?: number;
+}): Promise<void> {
 	// * The bulk of the "building" is just tsup. All we really do after that
 	// * is generate a basic Express app
-	await transpile(appRoot);
+	await transpile(options.appRoot);
 
-	const pagesPath = path.join(appRoot, 'src', 'pages');
-	const serverRoutesPath = path.join(appRoot, 'src', 'server');
-	const layoutsPath = path.join(appRoot, 'src', 'layouts');
-	const publicPath = path.join(appRoot, 'src', 'public');
+	const pagesPath = path.join(options.appRoot, 'src', 'pages');
+	const serverRoutesPath = path.join(options.appRoot, 'src', 'server');
+	const layoutsPath = path.join(options.appRoot, 'src', 'layouts');
+	const publicPath = path.join(options.appRoot, 'src', 'public');
 
 	const pages = await glob(path.join(pagesPath, '**/*.tsx'));
 	const serverRoutes = await glob(path.join(serverRoutesPath, '**/*.ts'));
 	const layouts = await glob(path.join(layoutsPath, '**/*.tsx'));
 
-	const pageRouteDefinitions = await createPageRouteDefinitions(appRoot, pages);
-	const serverRouteDefinitions = await createServerRouteDefinitions(appRoot, serverRoutes);
-	const layoutDefinitions = await createLayoutDefinitions(appRoot, layouts);
+	const pageRouteDefinitions = await createPageRouteDefinitions(options.appRoot, pages);
+	const serverRouteDefinitions = await createServerRouteDefinitions(options.appRoot, serverRoutes);
+	const layoutDefinitions = await createLayoutDefinitions(options.appRoot, layouts);
 	const allRouteDefinitions = [...pageRouteDefinitions, ...serverRouteDefinitions];
 
 	for (const pageRouteDefinition of pageRouteDefinitions) {
@@ -202,7 +205,7 @@ export async function build(appRoot: string): Promise<void> {
 	}
 
 	if (defaultLayoutRequired) {
-		const defaultLayoutPath = path.join(appRoot, 'src', 'App.tsx');
+		const defaultLayoutPath = path.join(options.appRoot, 'src', 'App.tsx');
 		if (!fs.pathExistsSync(defaultLayoutPath)) {
 			console.log('[Error]'.red, 'Some pages require the default \'src/App.tsx\' layout, but one was not provided.'.yellow);
 			process.exit();
@@ -218,7 +221,7 @@ export async function build(appRoot: string): Promise<void> {
 	const errorPages: string[] = [];
 
 	for (const fileName of VALID_ERROR_FILES) {
-		const pagePath = path.join(appRoot, `src/pages/_${fileName}.tsx`);
+		const pagePath = path.join(options.appRoot, `src/pages/_${fileName}.tsx`);
 
 		if (fs.existsSync(pagePath)) {
 			errorPages.push(fileName);
@@ -308,6 +311,13 @@ export async function build(appRoot: string): Promise<void> {
 			server += '\t\tjsx = React.createElement(React.Fragment, null, jsx, scriptTag);\n';
 		}
 
+		if (options.hotReloadPort) {
+			server += `\t\tif (!isPartial) {\n`;
+			server += `\t\t\tconst hotReloadScript = React.createElement('script', { dangerouslySetInnerHTML: { __html: \`var eventSource = new EventSource('http://localhost:${options.hotReloadPort}/dev-reload'); eventSource.addEventListener('reload', function() { location.reload(); });\` } });\n`;
+			server += '\t\t\tjsx = React.createElement(React.Fragment, null, jsx, hotReloadScript);\n';
+			server += '\t\t}\n';
+		}
+
 		server += '\t\tlet html = \'\';\n';
 		server += '\t\tif (isPartial) {\n';
 		server += `\t\t\thtml = renderToString(jsx);\n`;
@@ -360,7 +370,7 @@ export async function build(appRoot: string): Promise<void> {
 	}
 
 	if (fs.pathExistsSync(publicPath)) {
-		fs.cpSync(publicPath, path.join(appRoot, 'dist', 'public'), { recursive: true });
+		fs.cpSync(publicPath, path.join(options.appRoot, 'dist', 'public'), { recursive: true });
 		server += 'app.use(express.static(path.join(__dirname, \'public\')));\n';
 	}
 
@@ -380,7 +390,7 @@ export async function build(appRoot: string): Promise<void> {
 	server += '}\n';
 	server += 'app.listen(yeahConfig.port || 3000);\n';
 
-	fs.writeFileSync(path.join(appRoot, 'dist', 'server.mjs'), server);
+	fs.writeFileSync(path.join(options.appRoot, 'dist', 'server.mjs'), server);
 }
 
 function pathToRoute(prefix: string, filePath: string): string {
@@ -586,10 +596,4 @@ async function createLayoutDefinitions(appRoot: string, layouts: string[]): Prom
 	}
 
 	return definitions;
-}
-
-// TODO - Make this into a CLI app
-
-if (import.meta.main) {
-	build(process.cwd());
 }

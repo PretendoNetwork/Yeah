@@ -3,7 +3,9 @@
   "version": "2.0.0",
   "description": "",
   "main": "dist/index.js",
-  "type": "module",
+  "bin": {
+    "yeah": "./dist/cli.js"
+  },
   "scripts": {
     "lint": "eslint ./src",
     "lint:fix": "eslint ./src --fix",
@@ -19,48 +21,51 @@
     "@types/node": "^24.9.2",
     "@types/react": "^19.2.2",
     "eslint": "^8.57.1",
-    "tsc-alias": "^1.8.16",
-    "tsup": "^8.5.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "chokidar": "^5.0.0",
     "colors": "^1.4.0",
+    "commander": "^14.0.2",
     "express": "^5.1.0",
     "fs-extra": "^11.3.2",
     "glob": "^11.0.3",
     "react": "^19.2.0",
+    "tsc-alias": "^1.8.16",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
     "zod": "^4.1.12"
   },
   "exports": {
     "./context": {
       "types": "./dist/context.d.ts",
       "import": "./dist/context.js",
-      "require": "./dist/context.cjs"
+      "require": "./dist/context.mjs"
     },
     "./sse": {
       "types": "./dist/sse.d.ts",
       "import": "./dist/sse.js",
-      "require": "./dist/sse.cjs"
+      "require": "./dist/sse.mjs"
     },
     "./components": {
       "types": "./dist/components.d.ts",
       "import": "./dist/components.js",
-      "require": "./dist/components.cjs"
+      "require": "./dist/components.mjs"
     },
     "./components/*": {
       "types": "./dist/components/*.d.ts",
       "import": "./dist/components/*.js",
-      "require": "./dist/components/*.cjs"
+      "require": "./dist/components/*.mjs"
     },
     "./http-errors": {
       "types": "./dist/http-errors/index.d.ts",
       "import": "./dist/http-errors/index.js",
-      "require": "./dist/http-errors/index.cjs"
+      "require": "./dist/http-errors/index.mjs"
     },
     "./http-errors/*": {
       "types": "./dist/http-errors/*.d.ts",
       "import": "./dist/http-errors/*.js",
-      "require": "./dist/http-errors/*.cjs"
+      "require": "./dist/http-errors/*.mjs"
     }
   }
 }
